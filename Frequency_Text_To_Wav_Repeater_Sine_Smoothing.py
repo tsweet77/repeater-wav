@@ -9,19 +9,27 @@ def main():
     channels = 0
     sampling_rate = 0
     amplitudewidth = 0
-    samplesPerCharacter = 0
     text = None
     frequency_int = 0
+    smoothing_factor = -1.0  # Adjust this value to control the smoothing effect
+    smoothing_percent = "-1"
+    repeat_times = 1
 
     while True:
         text = input("Enter Intention: ")
         if text != "":
             break
 
-    repeat_times = int(input("# Times to Repeat: "))
+    while True:
+        repeat_times_str = input("# Times to Repeat: ")
+        if text != "":
+            break
+    
     try:
-        if repeat_times <= 0:
+        if int(repeat_times_str) <= 0:
             repeat_times = 1
+        else:
+            repeat_times = int(repeat_times_str)
     except ValueError:
         repeat_times = 1
 
@@ -36,26 +44,23 @@ def main():
         try:
             sampling_rate = int(sampling_rate_input)
         except ValueError:
-            sampling_rate = 0
-    print(f"Valid input received: {sampling_rate}")
-
+            sampling_rate = 48000
+    
     while channels < 1 or channels > 8:
         channels_input = input("Enter Channels (1-8): ")
         try:
             channels = int(channels_input)
         except ValueError:
-            channels = 0
-    print(f"Valid input received: {channels}")
-
+            channels = 1
+    
     while amplitudewidth != 2 and amplitudewidth != 4:
         amplitudewidth_input = input("Enter Amplitude Width (2 or 4): ")
         try:
             amplitudewidth = int(amplitudewidth_input)
         except ValueError:
-            amplitudewidth = 0
-    print(f"Valid input received: {amplitudewidth}")
-
-    while frequency_int < 1:
+            amplitudewidth = 4
+    
+    while frequency_int < 20:
         frequency = input("Enter Frequency (Default 432Hz): ")
         try:
             #If lowercase right 2 characters are hz, then remove them
@@ -64,30 +69,38 @@ def main():
             
             frequency_int = int(frequency)
             if frequency_int < 1:
-                frequency_int = 1
+                frequency_int = 20
         except ValueError:
             frequency_int = 432
 
-    output_file = "Output_Sine_" + str(frequency_int) + "Hz_" + str(sampling_rate) + ".wav"
+    while smoothing_factor < 0.0 or smoothing_factor > 1.0:
+        smoothing_percent = input("Smoothing Factor (0.0-100.0%, Default 50.0%): ")
+        try:
+            #If right most character of smoothing_percent == "%" then remove that last character
+            if smoothing_percent[len(smoothing_percent) - 1:len(smoothing_percent)] == "%":
+                smoothing_percent = smoothing_percent[0:len(smoothing_percent) - 1]
+
+            smoothing_factor = float(smoothing_percent) / 100
+            if smoothing_factor < 0.0:
+                smoothing_factor = 0.0
+                smoothing_percent = "0"
+        except ValueError:
+            smoothing_factor = 0.50
+            smoothing_percent = "50"
+
+    output_file = "Output_" + str(frequency_int) + "Hz_Smoothing_" + smoothing_percent + "_Percent_" + str(sampling_rate) + ".wav"
 
     # Open WAV file for writing
     sampleMax = (2147483647 if amplitudewidth == 4 else 32767)
     
-    # Calculate the scaling factor
-    scaling_factor = sampleMax / ascii_range
-
-    stepsize = int(sampling_rate / frequency_int / 2)
-    
-    sign = 1
+    # Calculate the total number of samples
+    total_samples = repeat_times * len(text) * sampling_rate // frequency_int
 
     with wave.open(output_file, "w") as wav_file:
         # Set parameters for the WAV file
         wav_file.setnchannels(channels)
         wav_file.setsampwidth(amplitudewidth)  # 32-bit audio or 16 bit audio
         wav_file.setframerate(sampling_rate)
-
-        # Calculate the total number of samples
-        total_samples = repeat_times * len(text) * sampling_rate // frequency_int
 
         # Generate the sine wave samples
         for i in range(total_samples):
@@ -110,8 +123,10 @@ def main():
             phase = 2 * math.pi * frequency_int * i / sampling_rate
 
             # Generate the trending sine wave sample
-            trend_factor = 0.5  # Adjust this value to control the smoothing effect
-            sample_value = int(sampleMax * (trend_factor * math.sin(phase) + (1 - trend_factor) * (2 * amplitude - 1)))
+            if (smoothing_factor == 0.0):
+                sample_value = int(amplitude * sampleMax * math.sin(phase))
+            else:
+                sample_value = int(sampleMax * (smoothing_factor * math.sin(phase) + (1 - smoothing_factor) * (2 * amplitude - 1)))
 
             for _ in range(channels):
                 wav_file.writeframes(struct.pack(('<i' if amplitudewidth == 4 else '<h'), sample_value))
