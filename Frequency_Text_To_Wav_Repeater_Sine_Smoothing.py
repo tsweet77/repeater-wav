@@ -4,6 +4,7 @@ from PIL import Image
 import struct
 import os
 import math
+import time
 
 def main():
     channels = 0
@@ -95,6 +96,8 @@ def main():
     
     # Calculate the total number of samples
     total_samples = repeat_times * len(text) * sampling_rate // frequency_int
+    last_progress_update = time.time()
+    buffer = []
 
     with wave.open(output_file, "w") as wav_file:
         # Set parameters for the WAV file
@@ -129,9 +132,25 @@ def main():
                 sample_value = int(sampleMax * (smoothing_factor * math.sin(phase) + (1 - smoothing_factor) * (2 * amplitude - 1)))
 
             for _ in range(channels):
-                wav_file.writeframes(struct.pack(('<i' if amplitudewidth == 4 else '<h'), sample_value))
+                buffer.append(sample_value)
 
-    print("Audio file saved as " + output_file)
+            if i % 10000 == 0:
+                # Write the accumulated samples to the WAV file
+                for sample in buffer:
+                    wav_file.writeframes(struct.pack(('<i' if amplitudewidth == 4 else '<h'), sample))
+                buffer = []
+
+            if time.time() - last_progress_update >= 1:
+                percentage = round((i / total_samples) * 100, 2)
+                print(f"\rProgress: {percentage}%, Samples Written: {i}     \r", end='', flush=True)  # Use end='' to prevent newline character and flush to ensure immediate printing
+                last_progress_update = time.time()  # Update the last progress update time
+
+        # Write any remaining samples in the buffer
+        for sample in buffer:
+            wav_file.writeframes(struct.pack(('<i' if amplitudewidth == 4 else '<h'), sample))
+
+    print(f"\rProgress: 100.00%, Samples Written: {total_samples}     ", flush=True)
+    print("\nAudio file saved as " + output_file)
 
 if __name__ == "__main__":
     main()
