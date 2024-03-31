@@ -5,6 +5,7 @@ import struct
 import os
 import math
 import time
+import re
 
 def main():
     channels = 0
@@ -24,6 +25,7 @@ def main():
     while True:
         repeat_times_str = input("# Times to Repeat: ")
         if text != "":
+            text = re.sub(r'[^a-zA-Z0-9\s]', '', text)
             break
     
     try:

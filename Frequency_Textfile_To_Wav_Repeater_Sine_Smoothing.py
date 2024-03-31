@@ -5,6 +5,7 @@ import struct
 import os
 import math
 import time
+import re
 
 def get_valid_filename(prompt):
     while True:
@@ -27,6 +28,7 @@ def main():
     input_file = get_valid_filename("Enter Input Text File: ")
     with open(input_file, 'r', encoding='utf-8') as f:
         text = f.read()
+        text = re.sub(r'[^a-zA-Z0-9\s]', '', text)
 
     # Find lowest and highest ASCII values
     min_ascii = min(ord(char) for char in text)
