@@ -1,7 +1,2 @@
-<<<<<<< HEAD
 numpy==1.26.4
 Pillow==10.2.0
-=======
-numpy==1.26.4
-Pillow==10.2.0
->>>>>>> c2780fcfa4edd21fdfc5cdad401d962b034cf237
