@@ -42,13 +42,6 @@ def main():
     # Find the range of ASCII values
     ascii_range = max_ascii - min_ascii
 
-    while sampling_rate < 48000 or sampling_rate > 767500:
-        sampling_rate_input = input("Enter Sampling Rate [Default 48000, Max 767500]: ")
-        try:
-            sampling_rate = int(sampling_rate_input)
-        except ValueError:
-            sampling_rate = 48000
-    
     while channels < 1 or channels > 8:
         channels_input = input("Enter Channels (1-8): ")
         try:
@@ -75,6 +68,13 @@ def main():
                 frequency_int = 20
         except ValueError:
             frequency_int = 432
+
+    while sampling_rate < frequency_int or sampling_rate > 767500:
+        sampling_rate_input = input("Sampling Rate [Default 100X Frequency, Max 767500]: ")
+        try:
+            sampling_rate = int(sampling_rate_input)
+        except ValueError:
+            sampling_rate = 100 * frequency_int
 
     while smoothing_factor < 0.0 or smoothing_factor > 1.0:
         smoothing_percent = input("Smoothing Factor (0.0-100.0%, Default 50.0%): ")
