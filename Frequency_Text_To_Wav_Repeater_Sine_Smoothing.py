@@ -136,7 +136,7 @@ def main():
             for _ in range(channels):
                 buffer.append(sample_value)
 
-            if i % 10000 == 0:
+            if i % 100000 == 0:
                 # Write the accumulated samples to the WAV file
                 for sample in buffer:
                     wav_file.writeframes(struct.pack(('<i' if amplitudewidth == 4 else '<h'), sample))

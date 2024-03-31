@@ -85,7 +85,7 @@ def main():
             smoothing_factor = 0.50
             smoothing_percent = "50"
 
-    output_file = "Output_" + str(frequency_int) + "Hz_Smoothing_" + smoothing_percent + "_Percent_" + str(sampling_rate) + ".wav"
+    output_file = input_file + "_" + str(frequency_int) + "Hz_Smoothing_" + smoothing_percent + "_Percent_" + str(sampling_rate) + ".wav"
 
     # Open WAV file for writing
     sampleMax = (2147483647 if amplitudewidth == 4 else 32767)
@@ -130,7 +130,7 @@ def main():
             for _ in range(channels):
                 buffer.append(sample_value)
 
-            if i % 10000 == 0:
+            if i % 100000 == 0:
                 # Write the accumulated samples to the WAV file
                 for sample in buffer:
                     wav_file.writeframes(struct.pack(('<i' if amplitudewidth == 4 else '<h'), sample))
