@@ -490,7 +490,7 @@ void setupQuestions()
     intention = "";
     for (int i = 0; i < repeatIntention; ++i)
         intention += intentionOriginal;
-    while (sampleRate < 10000 || sampleRate > 767500)
+    while (sampleRate < 44100 || sampleRate > 767500)
     {
         std::cout << "Enter Sampling Rate [Default 48000, Max 767500]: ";
         std::getline(std::cin, sampling_rate_input);
