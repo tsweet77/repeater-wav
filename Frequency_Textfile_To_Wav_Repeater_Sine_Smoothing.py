@@ -30,6 +30,20 @@ def main():
         text = f.read()
         text = re.sub(r'[^a-zA-Z0-9\s]', '', text)
 
+    while True:
+        repeat_times_str = input("# Times to Repeat: ")
+        if text != "":
+            text = re.sub(r'[^a-zA-Z0-9\s]', '', text)
+            break
+
+    try:
+        if int(repeat_times_str) <= 0:
+            repeat_times = 1
+        else:
+            repeat_times = int(repeat_times_str)
+    except ValueError:
+        repeat_times = 1
+
     # Find lowest and highest ASCII values
     min_ascii = min(ord(char) for char in text)
     max_ascii = max(ord(char) for char in text)
@@ -91,7 +105,7 @@ def main():
     sampleMax = (2147483647 if amplitudewidth == 4 else 32767)
     
     # Calculate the total number of samples
-    total_samples = len(text) * sampling_rate // frequency_int
+    total_samples = repeat_times * len(text) * sampling_rate // frequency_int
     last_progress_update = time.time()
     buffer = []
 
