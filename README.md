@@ -1,7 +1,9 @@
 # repeater-wav
 Converts a text intention into a WAV file repeatedly.
 
-You probably want intention_repeater_wav.py
+For converting text files to WAV: Frequency_Textfile_To_Wav_Repeater_Sine_Smoothing.py
+
+For converting text intention to WAV: Frequency_Text_To_Wav_Repeater_Sine_Smoothing.py
 
 Intention Repeater Website: https://www.intentionrepeater.com
 
