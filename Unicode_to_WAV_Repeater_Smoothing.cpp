@@ -520,7 +520,7 @@ bool is_hz_suffix(const std::string &str)
 }
 void setupQuestions()
 {
-    std::cout << "Unicode to WAV Repeater with Smoothing v1.3" << std::endl;
+    std::cout << "Unicode to WAV Repeater with Smoothing v1.4" << std::endl;
     std::cout << "by Anthro Teacher and Nathan" << std::endl
               << std::endl;
     while (intention.empty())
@@ -668,7 +668,7 @@ void setupQuestions()
     }
 
     int digits;
-    int binarySize = (intention.length() / frequency) * sampleRate * bitsPerSample / 8.0 / 10;
+    int binarySize = (intention.length() / frequency) * sampleRate * bitsPerSample * numChannels / 8.0 / 10;
     digits = std::to_string(binarySize).length();
     std::wcout << L"Estimated File Size: " << display_suffix(std::to_wstring(binarySize), digits, L"Frequency") << L"B, Continue: (y/N)? ";
     std::getline(std::cin, continue_input);
@@ -715,7 +715,11 @@ NO_OPTIMIZE void stringMemoryAllocation(const std::wstring &textParameter)
 
 int main()
 {
+    cout << "Unicode to WAV Repeater v.1.5\n";
+    cout << "Copyright (c) 2024 Anthro Teacher\n" << endl;
+
     setupQuestions();
+    std::transform(continue_input.begin(), continue_input.end(), continue_input.begin(), ::toupper);
     if ((continue_input != "Y") && (continue_input != "YES"))
     {
         std::cout << "Exiting..." << std::endl;
@@ -727,5 +731,8 @@ int main()
     createWavFile(outputFile, intention);
     threadExit = true;
     cout << outputFile << " written." << endl;
+    // Wait for user to press enter before exiting
+    std::cout << "Press ENTER to exit...";
+    std::cin.get();
     return 0;
 }

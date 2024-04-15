@@ -1,7 +1,7 @@
 /*
-Text to WAV Repeater v1.3 with Smoothing
+Text to WAV Repeater v1.4 with Smoothing
 by Anthro Teacher and Nathan
-To Compile: g++ -O3 -Wall -static .\Wav_Repeater_Smoothing.cpp -o .\Wav_Repeater_Smoothing.exe -std=c++20
+To Compile: g++ -O3 -Wall -static .\Text_to_WAV_Repeater_Smoothing.cpp -o .\Text_to_WAV_Repeater_Smoothing.exe -std=c++20
 */
 
 #include <iostream>
@@ -440,7 +440,7 @@ bool is_hz_suffix(const std::string &str)
 }
 void setupQuestions()
 {
-    std::cout << "Text to WAV Repeater with Smoothing v1.3" << std::endl;
+    std::cout << "Text to WAV Repeater with Smoothing v1.4" << std::endl;
     std::cout << "by Anthro Teacher and Nathan" << std::endl
               << std::endl;
     while (intention.empty())
@@ -600,7 +600,7 @@ void setupQuestions()
     }
 
     int digits;
-    int binarySize = (intention.length() / frequency) * sampleRate * bitsPerSample / 8.0 / 10;
+    int binarySize = (intention.length() / frequency) * sampleRate * bitsPerSample * numChannels / 8.0 / 10;
     digits = std::to_string(binarySize).length();
     std::cout << "Estimated File Size: " << display_suffix(std::to_string(binarySize), digits, "Frequency") << "B, Continue: (y/N)? ";
     std::getline(std::cin, continue_input);
@@ -647,7 +647,12 @@ NO_OPTIMIZE void stringMemoryAllocation(const std::string &textParameter)
 
 int main()
 {
+    cout << "Text to WAV Repeater v.1.5\n";
+    cout << "Copyright (c) 2024 Anthro Teacher\n" << endl;
+
     setupQuestions();
+    // Convert continue_input to uppercase
+    std::transform(continue_input.begin(), continue_input.end(), continue_input.begin(), ::toupper);
 
     if ((continue_input != "Y") && (continue_input != "YES"))
     {
@@ -661,5 +666,8 @@ int main()
     createWavFile(outputFile, intention);
     threadExit = true;
     cout << outputFile << " written." << endl;
+    // Wait for user to press enter before exiting
+    std::cout << "Press ENTER to exit...";
+    std::cin.get();
     return 0;
 }
