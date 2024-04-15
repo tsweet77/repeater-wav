@@ -1,4 +1,4 @@
-Intention Repeater Unicode to WAV Repeater v1.4
+Intention Repeater Unicode to WAV Repeater v1.5
 by Anthro Teacher aka Thomas Sweet
 Website: http://www.intentionrepeater.com
 Email: healing@intentionrepeater.com

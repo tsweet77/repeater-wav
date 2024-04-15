@@ -1,7 +1,7 @@
 /*
-Text to WAV Repeater v1.4 with Smoothing
+Text to WAV Repeater with Smoothing
 by Anthro Teacher and Nathan
-To Compile: g++ -O3 -Wall -static .\Text_to_WAV_Repeater_Smoothing.cpp -o .\Text_to_WAV_Repeater_Smoothing.exe -std=c++20
+To Compile: g++ -O3 -Wall -static ./Text_to_WAV_Repeater_Smoothing.cpp -o ./Text_to_WAV_Repeater_Smoothing -std=c++20
 */
 
 #include <iostream>
@@ -44,7 +44,7 @@ uint32_t durationInSeconds = -1; /// 10                                         
 std::string continue_input, inputFile = "", intentionOriginal = "", frequency_input = "0", smoothing_percent = "0", sampling_rate_input = "0";
 int ascii_range = 0, min_ascii = 0, max_ascii = 0;
 long long int numSamples = 0;
-double M_PI = 3.141592653589793238462643383279502884197;
+double PI = 3.141592653589793238462643383279502884197;
 std::string intention = "";
 
 std::string display_suffix(std::string num, int power, std::string designator)
@@ -200,15 +200,15 @@ void writeDataChunk(ofstream &wavFile, const std::string textToTransmit)
     numSamples = intention.length() * sampleRate / frequency;
 
     //    double interpolation_denominator = static_cast<double>(sampleRate) / frequency;
-    //    double phaseFirst = 2 * M_PI * frequency;
+    //    double phaseFirst = 2 * PI * frequency;
     //    long samples_per_character = sampleRate / frequency;
-    //    double phaseIncrement = (2.0f * M_PI * frequency) / static_cast<float>(sampleRate);
+    //    double phaseIncrement = (2.0f * PI * frequency) / static_cast<float>(sampleRate);
 
     wavFile.write("data", 4);
     const uint32_t dataChunkSizePos = wavFile.tellp();
     wavFile.write(reinterpret_cast<const char *>(&headerChunkSize), sizeof(headerChunkSize));
 
-    double phaseIncrement = (2.0 * M_PI * frequency) / sampleRate;
+    double phaseIncrement = (2.0 * PI * frequency) / sampleRate;
     double phase = 0.0; // Phase accumulator
 
     byteRate = sampleRate * numChannels * bitsPerSample / 8;                                                                                     /// THE ABOVE COVERTED INTO BYTES
@@ -232,8 +232,8 @@ void writeDataChunk(ofstream &wavFile, const std::string textToTransmit)
         double amplitude_interpolated = 2.0 * (amplitude_current + (amplitude_next - amplitude_current) * interpolation_factor) - 1.0;
 
         phase += phaseIncrement;
-        if (phase > 2.0 * M_PI) {
-            phase -= 2.0 * M_PI;
+        if (phase > 2.0 * PI) {
+            phase -= 2.0 * PI;
         }
 
         long long int sample_value;

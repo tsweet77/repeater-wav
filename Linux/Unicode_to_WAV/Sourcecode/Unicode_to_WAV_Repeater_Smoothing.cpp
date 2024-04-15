@@ -1,7 +1,7 @@
 /*
 Unicode to WAV Repeater with Smoothing
 by Anthro Teacher and Nathan
-To Compile: g++ -O3 -Wall -static .\Unicode_to_WAV_Repeater_Smoothing.cpp -o .\Unicode_to_WAV_Repeater_Smoothing.exe -std=c++20
+To Compile: g++ -O3 -Wall -static ./Unicode_to_WAV_Repeater_Smoothing.cpp -o ./Unicode_to_WAV_Repeater_Smoothing -std=c++20
 */
 
 #include <iostream>
@@ -715,7 +715,11 @@ NO_OPTIMIZE void stringMemoryAllocation(const std::wstring &textParameter)
 
 int main()
 {
+    cout << "Unicode to WAV Repeater v.1.5\n";
+    cout << "Copyright (c) 2024 Anthro Teacher\n" << endl;
+
     setupQuestions();
+    std::transform(continue_input.begin(), continue_input.end(), continue_input.begin(), ::toupper);
     if ((continue_input != "Y") && (continue_input != "YES"))
     {
         std::cout << "Exiting..." << std::endl;
@@ -727,5 +731,8 @@ int main()
     createWavFile(outputFile, intention);
     threadExit = true;
     cout << outputFile << " written." << endl;
+    // Wait for user to press enter before exiting
+    std::cout << "Press ENTER to exit...";
+    std::cin.get();
     return 0;
 }
