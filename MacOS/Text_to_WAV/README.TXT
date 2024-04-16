@@ -1,4 +1,4 @@
-Intention Repeater Text to WAV Repeater v1.5
+Intention Repeater Text to WAV Repeater v1.6
 by Anthro Teacher aka Thomas Sweet
 Website: http://www.intentionrepeater.com
 Email: healing@intentionrepeater.com
@@ -9,5 +9,3 @@ This program converts text (or a textfile) into a WAV file.
 
 Includes smoothing, which helps smooth out some of the noise.
 Start with 5% smoothing.
-
-It needs to be run in a terminal: ./Text_to_Repeater_Smoothing

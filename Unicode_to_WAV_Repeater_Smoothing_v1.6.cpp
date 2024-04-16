@@ -1,7 +1,7 @@
 /*
-Text to WAV Repeater with Smoothing
+Unicode to WAV Repeater with Smoothing
 by Anthro Teacher and Nathan
-To Compile: g++ -O3 -Wall -static Text_to_WAV_Repeater_Smoothing.cpp -o Text_to_WAV_Repeater_Smoothing.exe -std=c++20
+To Compile: g++ -O3 -Wall -static Unicode_to_WAV_Repeater_Smoothing.cpp -o Unicode_to_WAV_Repeater_Smoothing.exe -std=c++20
 */
 
 #include <iostream>
@@ -15,7 +15,6 @@ To Compile: g++ -O3 -Wall -static Text_to_WAV_Repeater_Smoothing.cpp -o Text_to_
 #include <string>
 #include <thread>
 #include <algorithm>
-#include <sstream>
 using namespace std;
 using namespace filesystem;
 #ifdef _WIN64
@@ -24,6 +23,8 @@ using namespace filesystem;
 #define BYTEALIGNMENTFORWAVPRODUCER 4
 #endif
 #include <bit>
+#include <codecvt>
+#include <locale>
 
 std::string VERSION = "v1.6";
 /// ////////////////////////////////////////////START OF RIFF WAVE TAG ///////////////////////////////////////////////////////////////////////////
@@ -47,33 +48,113 @@ uint32_t durationInSeconds = -1;  /// 10                                        
 std::string continue_input, inputFile = "", intentionOriginal = "", frequency_input = "0", smoothing_percent = "0", sampling_rate_input = "0";
 int ascii_range = 0, min_ascii = 0, max_ascii = 0;
 long long int numSamples = 0;
-double PI = 3.141592653589793238462643383279502884197;
-std::string intention = "";
+double M_PI = 3.141592653589793238462643383279502884197;
+std::wstring intention = L"";
+std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
 
-std::string display_suffix(std::string num, int power, std::string designator)
+std::wstring display_suffix(std::wstring num, int power, std::wstring designator)
 {
     if (power < 3)
     {
         return num;
     }
 
-    std::string s;
-
-    if (designator == "Iterations")
+    std::wstring s;
+    if (designator == L"Iterations")
     {
-        constexpr char iterations_suffix_array[] = {' ', 'k', 'M', 'B', 'T', 'q', 'Q', 's', 'S', 'O', 'N', 'D'};
+        constexpr wchar_t iterations_suffix_array[] = {L' ', L'k', L'M', L'B', L'T', L'q', L'Q', L's', L'S', L'O', L'N', L'D'};
         s = iterations_suffix_array[power / 3];
     }
-    else // designator == "Frequency"
+    else // designator == L"Frequency"
     {
-        constexpr char frequency_suffix_array[] = {' ', 'k', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y', 'R'};
+        constexpr wchar_t frequency_suffix_array[] = {L' ', L'k', L'M', L'G', L'T', L'P', L'E', L'Z', L'Y', L'R'};
         s = frequency_suffix_array[power / 3];
     }
 
-    std::string str2 = num.substr(0, power % 3 + 1) + "." + num.substr(power % 3 + 1, 3) + s;
-
+    std::wstring str2 = num.substr(0, power % 3 + 1) + L"." + num.substr(power % 3 + 1, 3) + s;
     return str2;
 }
+
+std::wstring utf8_to_wstring(const std::string &str)
+{
+    std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
+    std::wstring result;
+
+    try
+    {
+        result = converter.from_bytes(str);
+    }
+    catch (const std::range_error &e)
+    {
+        // Handle invalid UTF-8 sequence
+        // std::cerr << "Warning: Invalid UTF-8 sequence encountered. Skipping invalid characters." << std::endl;
+
+        // Iterate over each byte of the input string
+        for (std::string::const_iterator it = str.begin(); it != str.end(); ++it)
+        {
+            try
+            {
+                // Attempt to convert each byte individually
+                std::string byte_str(1, *it);
+                std::wstring converted = converter.from_bytes(byte_str);
+                result += converted;
+            }
+            catch (const std::range_error &e)
+            {
+                // Skip the invalid byte and continue with the next one
+                continue;
+            }
+        }
+    }
+
+    return result;
+}
+std::string wstring_to_utf8(const std::wstring &wstr)
+{
+    try
+    {
+        return conv.to_bytes(wstr);
+    }
+    catch (const std::range_error &e)
+    {
+        std::cerr << "Error: Invalid wide string sequence. " << e.what() << std::endl;
+        return ""; // Return an empty string or a default value
+    }
+}
+
+uint32_t utf8_codepoint(const wchar_t ch)
+{
+    if (ch < 0x80)
+        return ch;
+    else if (ch < 0x800)
+        return ((ch >> 6) & 0x1F) | 0xC0;
+    else if (ch < 0x10000)
+        return ((ch >> 12) & 0x0F) | 0xE0;
+    else if (ch < 0x110000)
+        return ((ch >> 18) & 0x07) | 0xF0;
+    else
+        return '?'; // Return a default character for invalid code points
+}
+/// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+void addPadding(std::ofstream &file)
+{
+    int currentPosition = file.tellp();
+    //std::cout << "Checking Pading Details Current Pos# " << currentPosition << std::endl;
+    int remainder = currentPosition % BYTEALIGNMENTFORWAVPRODUCER;
+    //std::cout << "Checking Pading Details Remainder# " << remainder << std::endl;
+    if (remainder != 0)
+    {
+        int paddingSize = BYTEALIGNMENTFORWAVPRODUCER - remainder;
+        std::cout << "Checking Pading Details Padding Size# " << paddingSize << std::endl;
+        for (int i = 0; i < paddingSize; ++i)
+        {
+            const uint8_t paddingByte = 0;
+            file.write(reinterpret_cast<const char *>(&paddingByte), sizeof(paddingByte));
+        }
+    }
+}
+*/
 std::string removeNonAlphanumeric(const std::string &str)
 {
     std::string result;
@@ -93,6 +174,7 @@ void writeRiffHeader(ofstream &wavFile)
     wavFile.write(reinterpret_cast<const char *>(&headerChunkSize), sizeof(headerChunkSize)); /// WRITING PLACEHOLDER FOR RIFF HEADER CHUNK SIZE INTO FILE
     // std::cout << "Checking Pading Details Current Pos# " << wavFile.tellp() << std::endl;
 }
+/// PRESUMES that when you call the function you are at end of file///
 /// PRESUMES that when you call the function you are at end of file///
 void writeRiffHeaderSizeElement(ofstream &wavFile)
 {
@@ -176,29 +258,32 @@ int ord(char c)
 {
     return static_cast<int>(c);
 }
-std::pair<int, int> findMinMaxASCII(const std::string &input)
+std::pair<uint32_t, uint32_t> findMinMaxASCII(const std::wstring &input)
 {
     if (input.empty())
     {
         // Return the maximum and minimum int values if the string is empty
-        return {std::numeric_limits<int>::max(), std::numeric_limits<int>::min()};
+        return {std::numeric_limits<uint32_t>::max(), std::numeric_limits<uint32_t>::min()};
     }
 
-    auto minMaxPair = std::minmax_element(input.begin(), input.end());
-    return {static_cast<int>(*minMaxPair.first), static_cast<int>(*minMaxPair.second)};
-}
-void writeDataChunk(ofstream &wavFile, const std::string textToTransmit)
-{
-    std::string filteredText;
-    // const size_t bufferSize = 1024 * 1024; // Adjust the buffer size as needed
-    for (char c : textToTransmit)
+    uint32_t minOrd = std::numeric_limits<uint32_t>::max();
+    uint32_t maxOrd = std::numeric_limits<uint32_t>::min();
+
+    for (wchar_t ch : input)
     {
-        if (std::isalnum(c) || std::isspace(c))
+        if (ch < 0x110000)
         {
-            filteredText += c;
+            uint32_t codepoint = utf8_codepoint(ch);
+            minOrd = std::min(minOrd, codepoint);
+            maxOrd = std::max(maxOrd, codepoint);
         }
     }
-    auto [minOrd, maxOrd] = findMinMaxASCII(filteredText);
+
+    return {minOrd, maxOrd};
+}
+void writeDataChunk(ofstream &wavFile, const std::wstring textToTransmit)
+{
+    auto [minOrd, maxOrd] = findMinMaxASCII(textToTransmit);
     min_ascii = minOrd;
     max_ascii = maxOrd;
     ascii_range = maxOrd - minOrd;
@@ -206,15 +291,15 @@ void writeDataChunk(ofstream &wavFile, const std::string textToTransmit)
     numSamples = intention.length() * sampleRate / frequency;
 
     //    double interpolation_denominator = static_cast<double>(sampleRate) / frequency;
-    //    double phaseFirst = 2 * PI * frequency;
+    //    double phaseFirst = 2 * M_PI * frequency;
     //    long samples_per_character = sampleRate / frequency;
-    //    double phaseIncrement = (2.0f * PI * frequency) / static_cast<float>(sampleRate);
+    //    double phaseIncrement = (2.0f * M_PI * frequency) / static_cast<float>(sampleRate);
 
     wavFile.write("data", 4);
     const uint32_t dataChunkSizePos = wavFile.tellp();
     wavFile.write(reinterpret_cast<const char *>(&headerChunkSize), sizeof(headerChunkSize));
 
-    double phaseIncrement = (2.0 * PI * frequency) / sampleRate;
+    double phaseIncrement = (2.0 * M_PI * frequency) / sampleRate;
     double phase = 0.0; // Phase accumulator
 
     byteRate = sampleRate * numChannels * bitsPerSample / 8;                                                                                     /// THE ABOVE COVERTED INTO BYTES
@@ -228,20 +313,23 @@ void writeDataChunk(ofstream &wavFile, const std::string textToTransmit)
 
     for (uint32_t i = 0; i < numSamples; ++i)
     {
-        long char_index = fmod((i / (sampleRate / frequency)), filteredText.size());
-        char current_char = filteredText[char_index];
-        char next_char = filteredText[(char_index + 1) % filteredText.size()];
+        long char_index = fmod((i / (sampleRate / frequency)), textToTransmit.size());
+        wchar_t current_char = textToTransmit[char_index];
+        wchar_t next_char = textToTransmit[(char_index + 1) % textToTransmit.size()];
 
-        double amplitude_current = ((ord(current_char)) - min_ascii) / static_cast<double>(ascii_range);
-        double amplitude_next = ((ord(next_char)) - min_ascii) / static_cast<double>(ascii_range);
+        uint32_t current_codepoint = utf8_codepoint(current_char);
+        uint32_t next_codepoint = utf8_codepoint(next_char);
+
+        double amplitude_current = ((current_codepoint)-min_ascii) / static_cast<double>(ascii_range);
+        double amplitude_next = ((next_codepoint)-min_ascii) / static_cast<double>(ascii_range);
         double interpolation_factor = fmod(i, (static_cast<double>(sampleRate / frequency))) / (sampleRate / frequency);
 
         double amplitude_interpolated = 2.0 * (amplitude_current + (amplitude_next - amplitude_current) * interpolation_factor) - 1.0;
 
         phase += phaseIncrement;
-        if (phase > 2.0 * PI)
+        if (phase > 2.0 * M_PI)
         {
-            phase -= 2.0 * PI;
+            phase -= 2.0 * M_PI;
         }
 
         long long int sample_value;
@@ -297,7 +385,6 @@ void writeDataChunk(ofstream &wavFile, const std::string textToTransmit)
     }
     // Ensure data alignment after writing the main data chunk
     ensureDataAlignment(wavFile);
-
     wavFile.seekp(dataChunkSizePos, ios::beg);
     wavFile.write(reinterpret_cast<const char *>(&actualDataSize), 4);
     wavFile.seekp(0, ios::end);
@@ -410,20 +497,20 @@ void insertID3Frame(ofstream &wavFile, const string &key, const string &value)
 }
 /// ////////////////////////////////////////////////END OF ID3V2 TAG///////////////////////////////////////////////////////////////////////////
 /// CONVERT A TEXT FILE TO A VECTOR OF SINGLE BYTES ///
-std::string readFileToString(const string &filename)
+std::wstring readFileToWString(const string &filename)
 {
     ifstream fileStream(filename, ios::binary | ios::ate); /// CREATE INPUT FILE STREAM AND OPEN A FILE NAMED FILENAME
     if (!fileStream.is_open())
     { /// CRASH IF INPUT FILE NOT FOUND ///
         std::cerr << "Error: File stream is not open." << std::endl;
-        return "";
+        return L"";
     }
-    std::stringstream buffer;     /// Create a stringstream to store the file contents
-    buffer << fileStream.rdbuf(); /// READ FILE CONTENTS INTO STRING BUFFER ///
-    return buffer.str();          /// RETURN THE STRINGSTREAM AS A STRING ///
+    std::stringstream buffer;             /// Create a stringstream to store the file contents
+    buffer << fileStream.rdbuf();         /// READ FILE CONTENTS INTO STRING BUFFER ///
+    return utf8_to_wstring(buffer.str()); /// RETURN THE STRINGSTREAM AS A STRING ///
 }
 /// Function to create WAV file with binary data repeated until 1 minute ///
-void createWavFile(const string &filename, const std::string textData)
+void createWavFile(const string &filename, const std::wstring textData)
 {
     ofstream wavFile(filename, ios::binary | ios::trunc);
     if (!wavFile.is_open())
@@ -464,38 +551,25 @@ void setupQuestions()
 {
     while (intention.empty())
     {
-        std::cout << "Enter Intention or TXT File: ";
-        std::getline(std::cin, intention);
+        std::cout << "Enter Unicode Filename: ";
+        std::getline(std::cin, inputFile);
 
-        if (intention.size() >= 4 && (intention.substr(intention.size() - 4) == ".txt" || intention.substr(intention.size() - 4) == ".TXT"))
+        std::ifstream file(inputFile);
+        if (file.is_open())
         {
-            std::ifstream file(intention);
-            if (file.is_open())
-            {
-                inputFile = intention + "_";
-                // intentionOriginal = removeNonAlphanumeric(intention);
-                intention = "";
-                std::string line;
-                while (std::getline(file, line))
-                {
-                    intention += line;
-                }
-                file.close();
-                intentionOriginal = removeNonAlphanumeric(intention);
-            }
-            else
-            {
-                std::cout << "Unable to open the file." << std::endl;
-                intention.clear();
-            }
+            inputFile += "_";
+            std::stringstream buffer;
+            buffer << file.rdbuf();
+            intention = utf8_to_wstring(buffer.str());
+            intentionOriginal = wstring_to_utf8(intention);
+            file.close();
         }
         else
         {
-            intentionOriginal = removeNonAlphanumeric(intention);
-            // intention = removeNonAlphanumeric(intention);
+            std::cout << "Unable to open the file." << std::endl;
+            inputFile.clear();
         }
     }
-    std::string intentionOriginal = intention;
     int repeatIntention = 0;
     while (repeatIntention < 1 || repeatIntention > 1000000)
     {
@@ -511,9 +585,10 @@ void setupQuestions()
             repeatIntention = 1;
         }
     }
-    intention = "";
+    std::wstring intentionOriginalWStr = intention;
+    intention = L"";
     for (int i = 0; i < repeatIntention; ++i)
-        intention += intentionOriginal;
+        intention += intentionOriginalWStr;
     while (sampleRate < 44100 || sampleRate > 767500)
     {
         std::cout << "Enter Sampling Rate [Default 48000, Max 767500]: ";
@@ -622,7 +697,7 @@ void setupQuestions()
     int digits;
     int binarySize = (intention.length() / frequency) * sampleRate * bitsPerSample * numChannels / 8.0 / 10;
     digits = std::to_string(binarySize).length();
-    std::cout << "Estimated File Size: " << display_suffix(std::to_string(binarySize), digits, "Frequency") << "B, Continue: (y/N)? ";
+    std::wcout << L"Estimated File Size: " << display_suffix(std::to_wstring(binarySize), digits, L"Frequency") << L"B, Continue: (y/N)? ";
     std::getline(std::cin, continue_input);
     std::transform(continue_input.begin(), continue_input.end(), continue_input.begin(), ::toupper);
 
@@ -642,19 +717,19 @@ void setupQuestions()
 #endif
 volatile bool threadExit = false;
 long long totalIterations = 0;
-NO_OPTIMIZE void stringMemoryAllocation(const std::string &textParameter)
+NO_OPTIMIZE void stringMemoryAllocation(const std::wstring &textParameter)
 {
     const size_t GB = 1e9;
-    const std::string terminator = "####";
-    //    std::cout << "Starting Intent Processor Script\n";
+    const std::wstring terminator = L"####";
+    //    std::wcout << L"Starting Intent Processor Script\n";
     while (!threadExit)
     {
-        std::string *str = new std::string;
+        std::wstring *str = new std::wstring;
         volatile size_t totalSize = 0;
         while (totalSize < GB)
         {
             *str += textParameter;
-            totalSize += textParameter.size();
+            totalSize += textParameter.size() * sizeof(wchar_t);
             ++totalIterations;
         }
         // Adding terminator to mark end of string
@@ -662,28 +737,25 @@ NO_OPTIMIZE void stringMemoryAllocation(const std::string &textParameter)
         // Deleting the string
         delete str;
     }
-    //    std::cout <<"Intent Processor Thread Exitting\n";
+    //    std::wcout << L"Intent Processor Thread Exitting\n";
 }
 
 int main()
 {
-    cout << "Text to WAV Repeater " << VERSION << endl;
+    cout << "Unicode to WAV Repeater " << VERSION << endl;
     cout << "Copyright (c) 2024 Anthro Teacher\n"
          << endl;
 
     setupQuestions();
-    // Convert continue_input to uppercase
     std::transform(continue_input.begin(), continue_input.end(), continue_input.begin(), ::toupper);
-
     if ((continue_input != "Y") && (continue_input != "YES"))
     {
         std::cout << "Exiting..." << std::endl;
         return 0;
     }
-
     string outputFile = inputFile + frequency_input + "Hz_SmoothingPercent_" + smoothing_percent + "_" + sampling_rate_input + ".wav";
     removeOldFile(outputFile);
-    //std::jthread intentProcessor(&stringMemoryAllocation, intention);
+    std::jthread intentProcessor(&stringMemoryAllocation, intention);
     createWavFile(outputFile, intention);
     threadExit = true;
     cout << outputFile << " written." << endl;

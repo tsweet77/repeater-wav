@@ -1,7 +1,7 @@
 /*
 Text to WAV Repeater with Smoothing
 by Anthro Teacher and Nathan
-To Compile: g++ -O3 -Wall -static ./Text_to_WAV_Repeater_Smoothing.cpp -o ./Text_to_WAV_Repeater_Smoothing -std=c++20
+To Compile: g++ -O3 -Wall -static Text_to_WAV_Repeater_Smoothing.cpp -o Text_to_WAV_Repeater_Smoothing.exe -std=c++20
 */
 
 #include <iostream>
@@ -23,22 +23,24 @@ using namespace filesystem;
 #define BYTEALIGNMENTFORWAVPRODUCER 4
 #endif
 #include <bit>
+
+std::string VERSION = "v1.6";
 /// ////////////////////////////////////////////START OF RIFF WAVE TAG ///////////////////////////////////////////////////////////////////////////
 const uint32_t headerChunkSize = 0; /// PLACE HOLDER FOR RIFF HEADER CHUNK SIZE
 /// /////////FORMAT CHUNK////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-const double volume_level = 0.99;                                                                                                                    /// VOLUME LEVEL///
-uint16_t audioFormat = 1;                                                                                                                             /// 3 is float 1 is PCM                            /// AN UNKNOWN AT THIS TIME
-uint16_t numChannels = 0;                                                                                                                             /// 8;                                                     /// NUMBER OF CHANNELS FOR OUR AUDIO I PRESUME 1 SAMPLE PER CHANNEL
-uint32_t sampleRate = 0;                                                                                                                              ///  765000.0;                                       /// PRESUMABLY THE NUMBER OF SAMPLES PER SECOND
-uint16_t bitsPerSample = 0;                                                                                                                           /// 16                                                     /// THE NUMBER OF BITS PER SAMPLE 2 BYTES // SAME AS AMPWIDTH
-uint32_t byteRate = 0; //sampleRate * numChannels * bitsPerSample / 8;                                                                                     /// THE ABOVE COVERTED INTO BYTES
-uint16_t blockAlign = 0; //numChannels * bitsPerSample / 8;                                                                                                /// NOT SURE YET PROBABLY ALIGNMENT PACKING TYPE OF VARIABLE
-uint32_t formatSize = 0;//sizeof(audioFormat) + sizeof(numChannels) + sizeof(sampleRate) + sizeof(byteRate) + sizeof(blockAlign) + sizeof(bitsPerSample); /// FORMAT CHUNK SIZE
-uint32_t sampleMax = 0; //(bitsPerSample == 16 ? 32767 : 2147483647);
-uint32_t sampleMin = 0; //(bitsPerSample == 16 ? 32767 : 2147483647);
-double frequency = 0.0;          /// Frequency To Play At
-double smoothing = -1.0;         /// Interpolation Smoothing
-uint32_t durationInSeconds = -1; /// 10                                                                                           ///DURATION OF THE WAV FILE
+const double volume_level = 0.99; /// VOLUME LEVEL///
+uint16_t audioFormat = 1;         /// 3 is float 1 is PCM                            /// AN UNKNOWN AT THIS TIME
+uint16_t numChannels = 0;         /// 8;                                                     /// NUMBER OF CHANNELS FOR OUR AUDIO I PRESUME 1 SAMPLE PER CHANNEL
+uint32_t sampleRate = 0;          ///  765000.0;                                       /// PRESUMABLY THE NUMBER OF SAMPLES PER SECOND
+uint16_t bitsPerSample = 0;       /// 16                                                     /// THE NUMBER OF BITS PER SAMPLE 2 BYTES // SAME AS AMPWIDTH
+uint32_t byteRate = 0;            // sampleRate * numChannels * bitsPerSample / 8;                                                                                     /// THE ABOVE COVERTED INTO BYTES
+uint16_t blockAlign = 0;          // numChannels * bitsPerSample / 8;                                                                                                /// NOT SURE YET PROBABLY ALIGNMENT PACKING TYPE OF VARIABLE
+uint32_t formatSize = 0;          // sizeof(audioFormat) + sizeof(numChannels) + sizeof(sampleRate) + sizeof(byteRate) + sizeof(blockAlign) + sizeof(bitsPerSample); /// FORMAT CHUNK SIZE
+uint32_t sampleMax = 0;           //(bitsPerSample == 16 ? 32767 : 2147483647);
+uint32_t sampleMin = 0;           //(bitsPerSample == 16 ? 32767 : 2147483647);
+double frequency = 0.0;           /// Frequency To Play At
+double smoothing = -1.0;          /// Interpolation Smoothing
+uint32_t durationInSeconds = -1;  /// 10                                                                                           ///DURATION OF THE WAV FILE
 // uint32_t numOfDataCyclesToWrite = durationInSeconds * sampleRate * numChannels; /// THE NUMBER OF CYCLES WE COPY DATA INTO OUR DATA CHUNK
 // vector<uint16_t> silenceSamples(numOfDataCyclesToWrite, 1);                     /// VECTOR OF EMPTY DATA FOR OUR SILENT WAV FILE
 std::string continue_input, inputFile = "", intentionOriginal = "", frequency_input = "0", smoothing_percent = "0", sampling_rate_input = "0";
@@ -91,17 +93,20 @@ void writeRiffHeader(ofstream &wavFile)
     // std::cout << "Checking Pading Details Current Pos# " << wavFile.tellp() << std::endl;
 }
 /// PRESUMES that when you call the function you are at end of file///
-void writeRiffHeaderSizeElement(ofstream &wavFile) {
+void writeRiffHeaderSizeElement(ofstream &wavFile)
+{
     int fileLength = static_cast<int>(wavFile.tellp());
     uint32_t fileSizeMinus8 = static_cast<uint32_t>(fileLength - 8);
     wavFile.seekp(4, ios::beg);
     wavFile.write(reinterpret_cast<const char *>(&fileSizeMinus8), sizeof(fileSizeMinus8));
     wavFile.seekp(0, ios::end);
 }
-void ensureDataAlignment(ofstream &wavFile) {
+void ensureDataAlignment(ofstream &wavFile)
+{
     long pos = wavFile.tellp();
     long align = pos % 2;
-    if (align != 0) {
+    if (align != 0)
+    {
         uint8_t paddingByte = 0;
         wavFile.write(reinterpret_cast<const char *>(&paddingByte), sizeof(paddingByte));
     }
@@ -184,7 +189,7 @@ std::pair<int, int> findMinMaxASCII(const std::string &input)
 void writeDataChunk(ofstream &wavFile, const std::string textToTransmit)
 {
     std::string filteredText;
-    //const size_t bufferSize = 1024 * 1024; // Adjust the buffer size as needed
+    // const size_t bufferSize = 1024 * 1024; // Adjust the buffer size as needed
     for (char c : textToTransmit)
     {
         if (std::isalnum(c) || std::isspace(c))
@@ -220,7 +225,8 @@ void writeDataChunk(ofstream &wavFile, const std::string textToTransmit)
     std::vector<char> frames;
     const size_t bufferSize = 1024 * 1024; // Adjust the buffer size as needed
 
-    for (uint32_t i = 0; i < numSamples; ++i) {
+    for (uint32_t i = 0; i < numSamples; ++i)
+    {
         long char_index = fmod((i / (sampleRate / frequency)), filteredText.size());
         char current_char = filteredText[char_index];
         char next_char = filteredText[(char_index + 1) % filteredText.size()];
@@ -232,58 +238,71 @@ void writeDataChunk(ofstream &wavFile, const std::string textToTransmit)
         double amplitude_interpolated = 2.0 * (amplitude_current + (amplitude_next - amplitude_current) * interpolation_factor) - 1.0;
 
         phase += phaseIncrement;
-        if (phase > 2.0 * PI) {
+        if (phase > 2.0 * PI)
+        {
             phase -= 2.0 * PI;
         }
 
         long long int sample_value;
-        if (smoothing == 0.0) {
+        if (smoothing == 0.0)
+        {
             sample_value = amplitude_interpolated * sin(phase) * sampleMax;
-        } else {
+        }
+        else
+        {
             double trendingWave = smoothing * sin(phase);
             double smoothedAmplitude = (1.0 - smoothing) * amplitude_interpolated;
             sample_value = (trendingWave + smoothedAmplitude) * sampleMax * volume_level;
         }
 
-        for (int j = 0; j < numChannels; ++j) {
-            if (bitsPerSample == 32) {
+        for (int j = 0; j < numChannels; ++j)
+        {
+            if (bitsPerSample == 32)
+            {
                 int32_t sample_value_32bit = static_cast<int32_t>(sample_value);
-                frames.insert(frames.end(), reinterpret_cast<char*>(&sample_value_32bit), reinterpret_cast<char*>(&sample_value_32bit) + sizeof(sample_value_32bit));
-            } else {
+                frames.insert(frames.end(), reinterpret_cast<char *>(&sample_value_32bit), reinterpret_cast<char *>(&sample_value_32bit) + sizeof(sample_value_32bit));
+            }
+            else
+            {
                 int16_t sample_value_16bit = static_cast<int16_t>(sample_value);
-                frames.insert(frames.end(), reinterpret_cast<char*>(&sample_value_16bit), reinterpret_cast<char*>(&sample_value_16bit) + sizeof(sample_value_16bit));
+                frames.insert(frames.end(), reinterpret_cast<char *>(&sample_value_16bit), reinterpret_cast<char *>(&sample_value_16bit) + sizeof(sample_value_16bit));
             }
         }
 
-        if (frames.size() >= bufferSize * numChannels * (bitsPerSample / 8)) {
+        if (frames.size() >= bufferSize * numChannels * (bitsPerSample / 8))
+        {
             wavFile.write(frames.data(), frames.size());
             frames.clear();
         }
 
-        if (i % 100000 == 0) {
+        if (i % 100000 == 0)
+        {
             std::cout << "\rProgress: " << std::fixed << std::setprecision(2) << static_cast<float>(i) / static_cast<float>(numSamples) * 100.0f << "% Samples Written: " << std::to_string(i) << "     \r" << std::flush;
         }
     }
 
-    if (frames.size() > 0) {
+    if (frames.size() > 0)
+    {
         wavFile.write(frames.data(), frames.size());
         frames.clear();
     }
 
     uint32_t actualDataSize = static_cast<uint32_t>(static_cast<int64_t>(wavFile.tellp()) - dataChunkSizePos - 4);
-    if (actualDataSize % 2 != 0) {
+    if (actualDataSize % 2 != 0)
+    {
         uint8_t paddingByte = 0;
-        wavFile.write(reinterpret_cast<const char*>(&paddingByte), sizeof(paddingByte));
+        wavFile.write(reinterpret_cast<const char *>(&paddingByte), sizeof(paddingByte));
         actualDataSize += 1;
     }
     // Ensure data alignment after writing the main data chunk
     ensureDataAlignment(wavFile);
 
     wavFile.seekp(dataChunkSizePos, ios::beg);
-    wavFile.write(reinterpret_cast<const char*>(&actualDataSize), 4);
+    wavFile.write(reinterpret_cast<const char *>(&actualDataSize), 4);
     wavFile.seekp(0, ios::end);
 
-    std::cout << "\rProgress: 100.00%" << " Samples Written: " << std::to_string(numSamples) << "     \r" << std::endl;
+    std::cout << "\rProgress: 100.00%"
+              << " Samples Written: " << std::to_string(numSamples) << "     \r" << std::endl;
 
     if (frames.size() > 0)
     {
@@ -291,7 +310,7 @@ void writeDataChunk(ofstream &wavFile, const std::string textToTransmit)
         frames.clear();
     }
     std::cout << "\rProgress: 100.00%"
-            << " Samples Written: " << std::to_string(numSamples) << "     \r" << std::endl;
+              << " Samples Written: " << std::to_string(numSamples) << "     \r" << std::endl;
 }
 /// //////////////////////////////END OF RIFF TAG////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -403,9 +422,11 @@ std::string readFileToString(const string &filename)
     return buffer.str();          /// RETURN THE STRINGSTREAM AS A STRING ///
 }
 /// Function to create WAV file with binary data repeated until 1 minute ///
-void createWavFile(const string &filename, const std::string textData) {
+void createWavFile(const string &filename, const std::string textData)
+{
     ofstream wavFile(filename, ios::binary | ios::trunc);
-    if (!wavFile.is_open()) {
+    if (!wavFile.is_open())
+    {
         cerr << "Error: Unable to create WAV file " << filename << endl;
         exit(EXIT_FAILURE);
     }
@@ -413,12 +434,12 @@ void createWavFile(const string &filename, const std::string textData) {
     // Writing headers and data chunks
     writeRiffHeader(wavFile);
     writeFormatHeader(wavFile, formatSize, audioFormat, numChannels, sampleRate, byteRate, blockAlign, bitsPerSample);
-    writeDataChunk(wavFile, textData);  // Writes the bulk of audio data
-    
+    writeDataChunk(wavFile, textData); // Writes the bulk of audio data
+
     // Ensure alignment before finalizing the file
     ensureDataAlignment(wavFile);
 
-    writeRiffHeaderSizeElement(wavFile);  // Finalizes the RIFF header size
+    writeRiffHeaderSizeElement(wavFile); // Finalizes the RIFF header size
     wavFile.close();
 }
 short removeOldFile(const std::string &filename)
@@ -440,14 +461,11 @@ bool is_hz_suffix(const std::string &str)
 }
 void setupQuestions()
 {
-    std::cout << "Text to WAV Repeater with Smoothing v1.4" << std::endl;
-    std::cout << "by Anthro Teacher and Nathan" << std::endl
-              << std::endl;
     while (intention.empty())
     {
         std::cout << "Enter Intention or TXT File: ";
         std::getline(std::cin, intention);
-        
+
         if (intention.size() >= 4 && (intention.substr(intention.size() - 4) == ".txt" || intention.substr(intention.size() - 4) == ".TXT"))
         {
             std::ifstream file(intention);
@@ -473,7 +491,7 @@ void setupQuestions()
         else
         {
             intentionOriginal = removeNonAlphanumeric(intention);
-            //intention = removeNonAlphanumeric(intention);
+            // intention = removeNonAlphanumeric(intention);
         }
     }
     std::string intentionOriginal = intention;
@@ -548,7 +566,8 @@ void setupQuestions()
     {
         std::cout << "Enter Frequency (Default 432Hz): ";
         std::getline(std::cin, frequency_input);
-        if (frequency_input.empty()) {
+        if (frequency_input.empty())
+        {
             frequency = 432.0;
             frequency_input = "432";
             break;
@@ -647,8 +666,9 @@ NO_OPTIMIZE void stringMemoryAllocation(const std::string &textParameter)
 
 int main()
 {
-    cout << "Text to WAV Repeater v.1.5\n";
-    cout << "Copyright (c) 2024 Anthro Teacher\n" << endl;
+    cout << "Text to WAV Repeater " << VERSION << endl;
+    cout << "Copyright (c) 2024 Anthro Teacher\n"
+         << endl;
 
     setupQuestions();
     // Convert continue_input to uppercase
