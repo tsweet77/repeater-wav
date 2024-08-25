@@ -16,6 +16,7 @@ To Compile: g++ -O3 -Wall -static Multi-Format_to_WAV_Repeater_Smoothing.cpp -o 
 #include <thread>
 #include <algorithm>
 #include <climits>
+#include <sstream>
 using namespace std;
 using namespace filesystem;
 #ifdef _WIN64
@@ -25,7 +26,7 @@ using namespace filesystem;
 #endif
 #include <bit>
 
-std::string VERSION = "v2.0";
+std::string VERSION = "v2.5";
 namespace fs = std::filesystem;
 
 /// ////////////////////////////////////////////START OF RIFF WAVE TAG ///////////////////////////////////////////////////////////////////////////
@@ -169,8 +170,7 @@ uint32_t utf8_codepoint(const wchar_t ch)
     else
         return '?'; // Return a default character for invalid code points
 }
-void readFileContents(const std::string &filename,
-                      std::vector<char> &intention_file_contents)
+void readFileContents(const std::string &filename, std::vector<char> &intention_file_contents)
 {
     std::ifstream file(filename, std::ios::binary);
     if (!file)
@@ -179,21 +179,12 @@ void readFileContents(const std::string &filename,
         std::exit(EXIT_FAILURE); // Terminate the program
     }
 
-    // Use std::istreambuf_iterator to read data directly into the string
-    std::string buffer(std::istreambuf_iterator<char>(file), {});
-    char ch;
-    while (file.get(ch))
-    {
-        if (ch != '\0')
-        {
-            buffer += ch;
-        }
-    }
+    // Use istreambuf_iterator to read data directly into the vector
+    intention_file_contents = std::vector<char>(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
 
-    // Convert string to vector<char>
-    intention_file_contents.assign(buffer.begin(), buffer.end());
     file.close();
 }
+
 uint32_t writeListHeader(ofstream &wavFile)
 {
     wavFile.write("LIST", 4);                                                                 /// WRITING LIST HEADER ID
@@ -227,8 +218,10 @@ void writeDataChunk_Text(ofstream &wavFile)
 {
     if (intentionMode == "File")
     {
-        intention = std::string(binaryIntentionDataOriginal.begin(), binaryIntentionDataOriginal.end());
+        intention = std::string(binaryIntentionData.begin(), binaryIntentionData.end());
     }
+
+    std::cout << "Length of intention: " << intention.length() << std::endl;
 
     auto [minOrd, maxOrd] = findMinMaxASCII(intention);
     min_ascii = minOrd;
@@ -282,7 +275,7 @@ void writeDataChunk_Text(ofstream &wavFile)
         long long int sample_value;
         if (smoothing == 0.0)
         {
-            sample_value = amplitude_interpolated * sin(phase) * sampleMax;
+            sample_value = amplitude_interpolated * sin(phase) * sampleMax * volume;
         }
         else
         {
@@ -671,6 +664,9 @@ void setupQuestions()
             if (file_exists(intention))
             {
                 readFileContents(intention, binaryIntentionDataOriginal);
+                bool_file_exists = true;
+                intentionMode = "File";
+                /*
                 std::ifstream file(intention, std::ios::binary); // Open the file in binary mode
                 if (file.is_open())
                 {
@@ -687,6 +683,7 @@ void setupQuestions()
                 {
                     std::cout << "Unable to open the file." << std::endl;
                 }
+                */
             }
             else
             {
@@ -701,14 +698,13 @@ void setupQuestions()
             bool_file_exists = true;
         }
     }
-    // std::cout << "file exists: " << bool_file_exists << std::endl;
 
     // std::string intentionOriginal = intention;
     int repeatIntention = 0;
     while (repeatIntention < 1 || repeatIntention > 1000000)
     {
         std::string input;
-        std::cout << "# Times to Repeat [1 to 1000000, Default 1]: ";
+        std::cout << "# Times to Repeat [1 to 1000000, Default 1] (Affects Length of WAV, not Strength): ";
         std::getline(std::cin, input);
         try
         {
@@ -856,9 +852,9 @@ void setupQuestions()
         intentionSize = binaryIntentionData.size();
     }
 
-    int digits;
-    int binarySize;
-    int textSize;
+    long long int digits;
+    long long int binarySize;
+    long long int textSize;
     std::string fileSizeStr;
     binarySize = intentionSize * bitsPerSample / 8.0 / 10;
     digits = std::to_string(binarySize).length();
@@ -973,8 +969,11 @@ int main()
     createWavFile(outputFile);
     // threadExit = true;
     cout << outputFile << " written." << endl;
-    // Wait for user to press enter before exiting
-    std::cout << "Press ENTER to exit...";
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+    // Wait for the user to press Enter before quitting
+    std::cout << "Press Enter to Quit...";
     std::cin.get();
+
     return 0;
 }
