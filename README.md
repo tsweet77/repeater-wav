@@ -1,4 +1,8 @@
 # repeater-wav
+
+Frequency_WAV_Repeater.exe is the recommended program.
+
+
 Converts a text intention into a WAV file repeatedly.
 
 For converting text files to WAV: Frequency_Textfile_To_Wav_Repeater_Sine_Smoothing.py
